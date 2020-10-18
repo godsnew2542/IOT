@@ -11,7 +11,6 @@ void setup() {
   Serial.begin(115200);
   pinMode(sw1, INPUT);
   pinMode(LED, OUTPUT);
-
 }
 
 void loop() {

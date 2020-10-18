@@ -47,7 +47,6 @@ void loop() {
     } else {
       digitalWrite(LED_DISLAY_GREEN, HIGH);
       digitalWrite(LED_DISLAY_REd, LOW);
-
     }
     OLED.clearDisplay();               //Clear display
     OLED.setTextColor(WHITE);          //Set text color
