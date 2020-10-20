@@ -56,7 +56,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println(msg);
 
-      if (msg > "20") {
+      if (msg > "5") {
       digitalWrite(LDE_red, LOW);
       digitalWrite(LED_green, HIGH);
     } else {

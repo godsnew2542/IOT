@@ -20,7 +20,7 @@ const char* mqtt_user = "";
 const char* mqtt_pass = "";
 const int mqtt_port = 1883;
 
-const int postingInterval = 5000;
+const int postingInterval = 500;
 long lastMsg = 0;
 
 WiFiClient espClient;
