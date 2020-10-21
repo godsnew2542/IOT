@@ -47,22 +47,37 @@ void setup_wifi() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
   // Handle your payload here
-  String msg = "";
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    msg += (char)payload[i];
-  }
-  Serial.println(msg);
+  String dis = "";
+  String BH = "";
 
-      if (msg > "5") {
+  if (strcmp(topic, "/projice/iot/distance/")) {
+    for (int i = 0; i < length; i++) {
+      dis += (char)payload[i];
+    }
+    if (dis > "5") {
       digitalWrite(LDE_red, LOW);
       digitalWrite(LED_green, HIGH);
     } else {
       digitalWrite(LDE_red, HIGH);
       digitalWrite(LED_green, LOW);
     }
+  }
+
+  if (strcmp(topic, "/projice/iot/BH1750/")) {
+    for (int i = 0; i < length; i++) {
+      BH += (char)payload[i];
+    }
+    if (BH <= "3") {
+      analogWrite(pinTone, 255);
+      analogWriteFreq(600);
+      delay(500);
+      analogWriteFreq(587);
+      delay(200);
+    } else {
+      noTone(pinTone);
+    }
+  }
+
 }
 
 void reconnect() {
@@ -70,7 +85,7 @@ void reconnect() {
     Serial.print("Attempting MQTT connection...");
     if (client.connect("ESP8266Nnnnnnnnnnnnn", mqtt_user, mqtt_pass)) {
       Serial.println("connected");
-      char* topic = "/projice/iot/distance/";
+      char* topic = "/projice/iot/+/";
       client.subscribe(topic);
     } else
       delay(100);

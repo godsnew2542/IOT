@@ -35,6 +35,9 @@ long distance = 0;
 #define trigPin D5
 #define echoPin D6
 
+// keyes laser
+int laserPin = D10;
+
 void setup() {
   Serial.begin(115200);
   OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C);
@@ -44,35 +47,46 @@ void setup() {
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
 
-  delay(100);
+  pinMode(laserPin, OUTPUT);
 
+  delay(500);
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
 }
 
 void mqtt_publish() {
 
+  digitalWrite(laserPin, HIGH); // Open the laser head
+
+  uint16_t val = 0;
+  BH1750_Init(BH1750address);             // Initial BH1750
+  if (2 == BH1750_Read(BH1750address)) {
+    val = ((buff[0] << 8) | buff[1]) / 1.2;
+    OLED.clearDisplay();               //Clear display
+    OLED.setTextColor(WHITE);          //Set text color
+    OLED.setCursor(0, 0);              //Set display start position
+    OLED.setTextSize(3);               //Set text size x1
+    OLED.println("BH1750");          //Type message
+    OLED.setCursor(0, 35);            //Set display postion
+    OLED.println(String(val) + " lx"); // Show result value
+    OLED.display();                    //Enable display
+    char topic[] = "/projice/iot/BH1750/";
+    char msg[] = "";
+    sprintf(msg, "%d", val);
+    client.publish(topic, msg);
+    Serial.printf("Published: topic[%s] val: %s \n", topic, msg);
+  }
+}
+void mqtt_publish_distance() {
+
   distance = read_hc_sr04();              // Read data from HC-SR04
   if (distance <= 200 && distance >= 0) {
-//    Serial.print("Distance = ");
-//    Serial.println(distance + String("cm "));
-
     // Prepare data to publish here
     char topic[] = "/projice/iot/distance/";
     char msg[] = "";
     sprintf(msg, "%d", distance);
     client.publish(topic, msg);
     Serial.printf("Published: topic[%s] Distance =%s cm\n", topic, msg);
-
-    OLED.clearDisplay();
-    OLED.setTextColor(WHITE);
-    OLED.setCursor(15, 0);
-    OLED.setTextSize(2);
-    OLED.print("HC-SR04");   // Print some message
-    OLED.setCursor(15, 35);
-    OLED.setTextSize(3);
-    OLED.print(String(distance) + " cm");
-    OLED.display();
   }
 }
 long  read_hc_sr04() {
@@ -109,7 +123,7 @@ void reconnect() {
     if (client.connect("ESP8266Nnewnew6030213011", mqtt_user, mqtt_pass)) {
       Serial.println("connected");
     } else
-      delay(400);
+      delay(100);
   }
 }
 
@@ -117,13 +131,28 @@ void loop() {
   if (!client.connected()) {
     reconnect();
   }
-
   client.loop();
-
   long now = millis();
-
   if (now - lastMsg > postingInterval) {
     mqtt_publish();
+    mqtt_publish_distance();
     lastMsg = now;
   }
+}
+
+int BH1750_Read(int address) {
+  int i = 0;
+  Wire.beginTransmission(address);
+  Wire.requestFrom(address, 2);
+  while (Wire.available()) {
+    buff[i] = Wire.read();                // Read one byte
+    i++;
+  }
+  Wire.endTransmission();
+  return i;
+}
+void BH1750_Init(int address) {
+  Wire.beginTransmission(address);
+  Wire.write(0x10);                       // Start operation
+  Wire.endTransmission();
 }
