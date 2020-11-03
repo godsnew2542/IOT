@@ -46,38 +46,42 @@ void setup_wifi() {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  // Handle your payload here
   String dis = "";
   String BH = "";
 
+  // Not topic /projice/iot/distance/
   if (strcmp(topic, "/projice/iot/distance/")) {
-    for (int i = 0; i < length; i++) {
-      dis += (char)payload[i];
-    }
-    if (dis > "5") {
-      digitalWrite(LDE_red, LOW);
-      digitalWrite(LED_green, HIGH);
-    } else {
-      digitalWrite(LDE_red, HIGH);
-      digitalWrite(LED_green, LOW);
-    }
-  }
-
-  if (strcmp(topic, "/projice/iot/BH1750/")) {
     for (int i = 0; i < length; i++) {
       BH += (char)payload[i];
     }
-    if (BH <= "3") {
+    Serial.print("BH ");
+    int bh = BH.toInt();
+    Serial.println(bh);
+    if (bh <= 3) {
       analogWrite(pinTone, 255);
-      analogWriteFreq(600);
       delay(500);
-      analogWriteFreq(587);
-      delay(200);
+      noTone(pinTone);
     } else {
       noTone(pinTone);
     }
   }
 
+  if (strcmp(topic, "/projice/iot/BH1750/")) {
+    for (int i = 0; i < length; i++) {
+      dis += (char)payload[i];
+    }
+    Serial.print("dis ");
+    int DIS = dis.toInt();
+    Serial.println(DIS);
+    if (DIS <= 5) {
+      digitalWrite(LDE_red, HIGH);
+      digitalWrite(LED_green, LOW);
+    } else {
+      digitalWrite(LDE_red, LOW);
+      digitalWrite(LED_green, HIGH);
+
+    }
+  }
 }
 
 void reconnect() {

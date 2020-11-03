@@ -134,8 +134,9 @@ void loop() {
   client.loop();
   long now = millis();
   if (now - lastMsg > postingInterval) {
-    mqtt_publish();
     mqtt_publish_distance();
+    mqtt_publish();
+
     lastMsg = now;
   }
 }
