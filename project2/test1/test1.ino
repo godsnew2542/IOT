@@ -1,3 +1,15 @@
+#define BLYNK_PRINT Serial
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+BlynkTimer timer;
+
+char auth[] = "BJpfq4mHiIrQ1b9_bhE1Jxgv1UKgcZL5";
+char ssid[] = "iotwifi";
+char pass[] = "1234567890";
+char server[] = "192.168.102.74";  // IP for your Local Server
+int port = 8080;
+
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include <gfxfont.h>
@@ -9,54 +21,43 @@
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 OLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-//Set wifi
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
-
-const char* ssid = "iotwifi";
-const char* password = "1234567890";
-const char* mqtt_server = "broker.hivemq.com";
-const char* mqtt_user = "";
-const char* mqtt_pass = "";
-const int mqtt_port = 1883;
-
-const int postingInterval = 500;
-long lastMsg = 0;
-
-WiFiClient espClient;
-PubSubClient client(espClient);
-
 // BH1750
 int BH1750address = 0x23;       // Set BH1750 address
 byte buff[2];
 
 // HC-SR04
 long distance = 0;
-#define trigPin D7
-#define echoPin D8
+int trigPin = D7;
+int echoPin = D8;
 
 // keyes laser
-int laserPin = D10;
+//int laserPin = D10;
+
+// Tone
+int pinTone = D8;
 
 void setup() {
+  // Debug console
   Serial.begin(115200);
+
   OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   OLED.display();
+
+  Blynk.begin(auth, ssid, pass, server, port);
+  //  Blynk.begin(auth, ssid, pass, IPAddress(192,168,102,74), 8080);
+
+    timer.setInterval(2000L, SensorBH1750);
+  timer.setInterval(2000L, SensorSR04);
 
   // HC-SR04
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
 
-  pinMode(laserPin, OUTPUT);
-
-  delay(500);
-  setup_wifi();
-  client.setServer(mqtt_server, mqtt_port);
+  Blynk.connect();
 }
 
-void mqtt_publish() {
-
-  digitalWrite(laserPin, HIGH); // Open the laser head
+void SensorBH1750() {
+  //  digitalWrite(laserPin, HIGH); // Open the laser head
 
   uint16_t val = 0;
   BH1750_Init(BH1750address);             // Initial BH1750
@@ -70,23 +71,28 @@ void mqtt_publish() {
     OLED.setCursor(0, 35);            //Set display postion
     OLED.println(String(val) + " lx"); // Show result value
     OLED.display();                    //Enable display
-    char topic[] = "/projice/iot/BH1750/";
-    char msg[] = "";
-    sprintf(msg, "%d", val);
-    client.publish(topic, msg);
-    Serial.printf("Published: topic[%s] val: %s \n", topic, msg);
+    Serial.printf(val + " lx");
+
+     if (val <= 3) {
+      analogWrite(pinTone, 255);
+      delay(500);
+      noTone(pinTone);
+    } else {
+      noTone(pinTone);
+    }
   }
 }
-void mqtt_publish_distance() {
 
-  distance = read_hc_sr04();              // Read data from HC-SR04
+void SensorSR04() {
+    distance = read_hc_sr04();              // Read data from HC-SR04
   if (distance <= 200 && distance >= 0) {
     // Prepare data to publish here
-    char topic[] = "/projice/iot/distance/";
     char msg[] = "";
     sprintf(msg, "%d", distance);
-    client.publish(topic, msg);
-    Serial.printf("Published: topic[%s] Distance =%s cm\n", topic, msg);
+    Serial.print(msg);
+    Serial.print("cm");
+    Serial.println();
+    Blynk.virtualWrite(V1, msg);
   }
 }
 long  read_hc_sr04() {
@@ -101,44 +107,9 @@ long  read_hc_sr04() {
   return  distance;                       // Return value
 }
 
-void setup_wifi() {
-  delay(10);
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("Connected, IP address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void reconnect() {
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    if (client.connect("ESP8266Nnewnew6030213011", mqtt_user, mqtt_pass)) {
-      Serial.println("connected");
-    } else
-      delay(100);
-  }
-}
-
 void loop() {
-  if (!client.connected()) {
-    reconnect();
-  }
-  client.loop();
-  long now = millis();
-  if (now - lastMsg > postingInterval) {
-    mqtt_publish_distance();
-    mqtt_publish();
-
-    lastMsg = now;
-  }
+  Blynk.run();
+  timer.run();
 }
 
 int BH1750_Read(int address) {
@@ -152,6 +123,7 @@ int BH1750_Read(int address) {
   Wire.endTransmission();
   return i;
 }
+
 void BH1750_Init(int address) {
   Wire.beginTransmission(address);
   Wire.write(0x10);                       // Start operation
