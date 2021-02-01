@@ -4,11 +4,11 @@
 #include <BlynkSimpleEsp8266.h>
 BlynkTimer timer;
 
-char auth[] = "BJpfq4mHiIrQ1b9_bhE1Jxgv1UKgcZL5";
-char ssid[] = "iotwifi";
-char pass[] = "1234567890";
-char server[] = "192.168.102.74";  // IP for your Local Server
-int port = 8080;
+char auth[] = "qJhJilNwDldc9SB4tfqbvR9tIOgU_UpV";
+char ssid[] = "N-Book";
+char pass[] = "nnewnew011";
+//char server[] = "192.168.102.74";  // IP for your Local Server
+//int port = 8080;
 
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
@@ -43,7 +43,8 @@ void setup() {
   OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   OLED.display();
 
-  Blynk.begin(auth, ssid, pass, server, port);
+  Blynk.begin(auth, ssid, pass);
+//  Blynk.begin(auth, ssid, pass, server, port);
   //  Blynk.begin(auth, ssid, pass, IPAddress(192,168,102,74), 8080);
 
     timer.setInterval(2000L, SensorBH1750);
